@@ -1,0 +1,249 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Step 1: Load the orders dataset
+# We are reading the CSV file and storing the data in a DataFrame called 'orders'
+orders = pd.read_csv(
+    r"C:\Users\KorapalaAbhinaya sri\Desktop\Logistics Data Analyst Internship\Data\olist_orders_dataset.csv"
+)
+
+
+# Step 2: Identify columns that contain date/time values
+# These columns need to be converted from text into datetime format
+date_columns = [
+    "order_purchase_timestamp",
+    "order_approved_at",
+    "order_delivered_carrier_date",
+    "order_delivered_customer_date",
+    "order_estimated_delivery_date"
+]
+
+
+# Step 3: Convert date columns into datetime format
+# pd.to_datetime() allows us to perform date calculations later
+# errors="coerce" converts invalid or missing dates into NaT
+for column in date_columns:
+    orders[column] = pd.to_datetime(orders[column], errors="coerce")
+
+
+# Step 4: Display the first 5 rows of the dataset
+# This helps us check whether the data was loaded correctly
+print(orders.head())
+
+
+# Step 5: Check the size of the dataset
+# shape returns the number of rows and columns
+print("Shape of dataset:")
+print(orders.shape)
+
+
+# Step 6: Display all column names
+# This helps us understand what information is available in the dataset
+print("\nColumn names:")
+print(orders.columns)
+
+
+# Step 7: Check the data type of each column
+# This confirms that the date columns were successfully converted to datetime
+print("\nData types:")
+print(orders.dtypes)
+
+
+# Step 8: Check for missing values
+# This shows how many missing values are present in each column
+print("\nMissing values:")
+print(orders.isnull().sum())
+
+
+# Step 10: Calculate delivery time in days
+# We subtract the purchase date from the customer delivery date
+# This tells us how many days it took to deliver each order
+orders["delivery_time_days"] = (
+    orders["order_delivered_customer_date"]
+    - orders["order_purchase_timestamp"]
+).dt.days
+
+
+# Display the delivery time for the first 5 orders
+print("\nDelivery time:")
+print(orders["delivery_time_days"].head())
+
+
+#Step 11:
+
+# Calculate average delivery time
+average_delivery_time = orders["delivery_time_days"].mean()
+
+print("\nAverage Delivery Time:")
+print(average_delivery_time)
+
+
+
+#step 12:
+
+# Identify on-time deliveries
+orders["on_time"] = (
+    orders["order_delivered_customer_date"]
+    <= orders["order_estimated_delivery_date"]
+)
+
+print("\nOn-Time Deliveries:")
+print(orders["on_time"].head())
+
+
+#Step 13:
+
+# Calculate delivery delay in days
+orders["delivery_delay_days"] = (
+    orders["order_delivered_customer_date"]
+    - orders["order_estimated_delivery_date"]
+).dt.days
+
+print("\nDelivery Delay:")
+print(orders["delivery_delay_days"].head())
+
+# Create a dataset containing only delivered orders
+delivered_orders = orders[
+    orders["order_delivered_customer_date"].notna()
+]
+
+# Calculate On-Time Delivery Rate only for delivered orders
+on_time_delivery_rate = (
+    delivered_orders["on_time"].mean() * 100
+)
+
+print("\nOn-Time Delivery Rate:")
+print(on_time_delivery_rate)
+
+# Calculate average delivery delay
+average_delay = orders["delivery_delay_days"].mean()
+
+print("\nAverage Delivery Delay:")
+print(average_delay)
+
+#Step 14:
+
+# Count delayed delivered orders
+delayed_orders = delivered_orders[
+    (delivered_orders["delivery_delay_days"] > 0) &
+    (delivered_orders["order_status"] == "delivered")
+]
+
+print("\nNumber of Delayed Delivered Orders:")
+print(len(delayed_orders))
+
+# Calculate delayed order percentage
+delayed_percentage = (len(delayed_orders) / len(orders)) * 100
+
+print("\nDelayed Order Percentage:")
+print(delayed_percentage)
+
+#Step 15:
+
+# Analyze order status
+order_status_counts = orders["order_status"].value_counts()
+
+print("\nOrder Status Counts:")
+print(order_status_counts)
+
+
+#step 16
+
+# Create bar chart for order status
+order_status_counts.plot(kind="bar")
+
+plt.title("Order Status Distribution")
+plt.xlabel("Order Status")
+plt.ylabel("Number of Orders")
+
+plt.show()
+
+
+
+#Step 17
+
+# Create histogram for delivery time
+orders["delivery_time_days"].dropna().plot(kind="hist", bins=30)
+
+plt.title("Delivery Time Distribution")
+plt.xlabel("Delivery Time (Days)")
+plt.ylabel("Number of Orders")
+
+plt.show()
+
+
+# Step 18
+
+# Categorize delivery performance
+def classify_delivery(delay):
+    if pd.isna(delay):
+        return "Not Delivered"
+    elif delay < 0:
+        return "Early"
+    elif delay == 0:
+        return "On Time"
+    else:
+        return "Delayed"
+
+orders["delivery_performance"] = (
+    orders["delivery_delay_days"].apply(classify_delivery)
+)
+
+# Count each category
+performance_counts = orders["delivery_performance"].value_counts()
+
+print("\nDelivery Performance:")
+print(performance_counts)
+# Create bar chart
+performance_counts.plot(kind="bar")
+
+plt.title("Delivery Performance")
+plt.xlabel("Performance")
+plt.ylabel("Number of Orders")
+
+plt.show()
+
+
+
+
+#Step 19
+
+# Analyze delivery performance by order status
+status_performance = pd.crosstab(
+    orders["order_status"],
+    orders["delivery_performance"]
+)
+
+print("\nDelivery Performance by Order Status:")
+print(status_performance)
+
+
+
+#Step 20
+
+# Delivery time statistics
+delivery_stats = orders["delivery_time_days"].describe()
+
+print("\nDelivery Time Statistics:")
+print(delivery_stats)
+
+
+
+#step 21
+
+# Major findings
+print("\n===== MAJOR LOGISTICS FINDINGS =====")
+
+print("Total Orders:", len(orders))
+
+print("Average Delivery Time (days):",
+      round(orders["delivery_time_days"].mean(), 2))
+
+print("On-Time Delivery Rate (%):",
+      round(on_time_delivery_rate, 2))
+
+print("Average Delivery Delay (days):",
+      round(orders["delivery_delay_days"].mean(), 2))
+
+print("Delayed Delivered Orders:",
+      len(delayed_orders))
